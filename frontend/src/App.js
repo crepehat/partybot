@@ -1,5 +1,8 @@
 import React, { Component } from "react";
-import "react-table/react-table.css";
+import "./App.css"
+import 'bootstrap/dist/css/bootstrap.min.css';
+
+import Block from "./Block"
 
 const URL = "ws://localhost:8080/"
 
@@ -34,9 +37,31 @@ class App extends Component {
 
   render() {
     return (
-      <div className="App">
-        <button onClick={this.sendMessage}>Swag</button>
-      </div>
+<table class="table">
+  <tbody>
+    <tr>
+      <td>aaaa</td>
+      <td>bbbb</td>
+      <td>cccc</td>
+    </tr>
+    <tr>
+      <td>aaaa</td>
+      <td>bbbb</td>
+      <td>cccc</td>
+    </tr>
+    <tr>
+      <td>aaaa</td>
+      <td>bbbb</td>
+      <td>cccc</td>
+    </tr>
+    <tr>
+      <td>aaaa</td>
+      <td>bbbb</td>
+      <td>cccc</td>
+    </tr>
+
+  </tbody>
+</table>
     );
   }
 }
