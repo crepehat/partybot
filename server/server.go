@@ -1,34 +1,63 @@
 package main
 
 import (
+	"encoding/csv"
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
-	"time"
+	"os"
 
 	"github.com/crepehat/partybot"
+	"github.com/gobuffalo/packr/v2"
 )
 
-var addr = flag.String("addr", ":8080", "http service address")
+var (
+	addr     = ":8080"
+	gridFile = "grid.csv"
+)
+
+func init() {
+	flag.StringVar(&addr, "addr", addr, "http service address")
+	flag.StringVar(&gridFile, "gridFile", gridFile, "Layout file for site")
+}
 
 func main() {
-	flag.Parse()
-	block1 := partybot.NewBlock()
-	block2 := partybot.NewBlock()
-	block1.Start()
-	block2.Start()
-	mux := http.NewServeMux()
-	mux.HandleFunc("/1", block1.ServeWs())
-	mux.HandleFunc("/2", block2.ServeWs())
 
-	go func() {
-		for {
-			block1.Send("Swoop")
-			block2.Send("Sweep")
-			time.Sleep(time.Second)
+	var gridSlice [][]string
+
+	flag.Parse()
+	fh, err := os.Open(gridFile)
+	if err != nil {
+		fmt.Println("Error opening gridfile. Double check it.", err)
+	}
+	r := csv.NewReader(fh)
+
+	for {
+		line, error := r.Read()
+		if error == io.EOF {
+			break
+		} else if error != nil {
+			log.Fatal(error)
 		}
-	}()
-	err := http.ListenAndServe(*addr, mux)
+		gridSlice = append(gridSlice, line)
+	}
+
+	grid, err := partybot.NewGrid(gridSlice)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	grid.PrintBlock(0, 8)
+
+	mux := http.NewServeMux()
+	mux.Handle("/api/", http.StripPrefix("/api", grid.GetMux()))
+
+	box := packr.New("reactAssets", "../frontend/build")
+	mux.Handle("/", http.FileServer(box))
+
+	err = http.ListenAndServe(addr, mux)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}

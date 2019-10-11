@@ -1,7 +1,9 @@
 package partybot
 
 import (
+	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -32,6 +34,25 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
+type coOrd struct {
+	x int
+	y int
+}
+
+type Grid struct {
+	blocks         []*Block
+	x              int
+	y              int
+	snakeCoord     coOrd
+	snakeDirection int //0=N,1=E,2=S,3=W
+	array          [][]string
+	// x and y are reversed
+	blockArray [][]*Block
+	seqLock    *sync.Mutex
+	seqCtx     context.Context
+	seqCancel  context.CancelFunc
+}
+
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	block *Block
@@ -43,9 +64,19 @@ type Client struct {
 	send chan []byte
 }
 
+type BlockState struct {
+	LightMagnitude float64 `json:"light_magnitude"`
+	LightOn        bool    `json:"light_on"`
+}
+
 // Block maintains the set of active clients and broadcasts messages to the
 // clients.
 type Block struct {
+	Name string `json:"name"`
+	X    int    `json:"x"`
+	Y    int    `json:"y"`
+
+	state *BlockState
 
 	// Registered clients.
 	clients map[*Client]bool
