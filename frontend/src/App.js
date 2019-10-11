@@ -7,13 +7,10 @@ import Grid from "./Grid"
 class App extends Component {
 
   keyHandling = (e) => {
-    console.log(e.key)
     fetch(URL+"snake", {
       body: JSON.stringify({"direction":e.key}),
       method: 'POST',
     })
-    .then(resp => resp.json()
-    .then(data => console.log(data)))
     .catch(err => console.log(err))
   }
   
@@ -32,8 +29,6 @@ class App extends Component {
       body: JSON.stringify({"name":command, "cycle_seconds":1}),
       method: 'POST',
     })
-    .then(resp => resp.json()
-    .then(data => console.log(data)))
     .catch(err => console.log(err))
   }
 
@@ -41,8 +36,6 @@ class App extends Component {
     fetch(URL+"sequence/stop", {
       method: 'GET',
     })
-    .then(resp => resp.json()
-    .then(data => console.log(data)))
     .catch(err => console.log(err))
   }
 
