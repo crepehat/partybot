@@ -36,6 +36,16 @@ func NewGrid(gridSlice [][]string) (g Grid, err error) {
 	return
 }
 
+func SleepCanBreak(ctx context.Context, sleep float64) (isBreak bool) {
+	select {
+	case <-ctx.Done():
+		isBreak = true
+	case <-time.After(time.Duration(sleep*1000) * time.Millisecond):
+		isBreak = false
+	}
+	return
+}
+
 func (g *Grid) PrintBlock(x, y int) {
 	fmt.Println(g.blockArray[y][x].Name)
 }
@@ -53,22 +63,27 @@ func (g *Grid) GetMux() *http.ServeMux {
 }
 
 func (g *Grid) handleSequenceStart() http.HandlerFunc {
-	type sequenceCommand struct {
+	type startCommand struct {
 		Name         string  `json:"name"`
 		CycleSeconds float64 `json:"cycle_seconds"`
 	}
+	type startResponse struct {
+		Response string `json:"response"`
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		var command sequenceCommand
+		var command startCommand
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
 		err := json.NewDecoder(r.Body).Decode(&command)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 		g.seqLock.Lock()
-		// json.NewEncoder(w).Encode(g.array)
 		g.seqCancel()
+		g.TurnAllOff()
+		// time.Sleep(1 * time.Second)
 		g.seqCtx, g.seqCancel = context.WithCancel(context.Background())
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		g.seqLock.Unlock()
 		switch command.Name {
 		case "wave":
@@ -84,15 +99,33 @@ func (g *Grid) handleSequenceStart() http.HandlerFunc {
 		case "snake":
 			g.Snake(command.CycleSeconds)
 		}
+		res := startResponse{
+			Response: fmt.Sprintf("Started %s", command.Name),
+		}
+		err = json.NewEncoder(w).Encode(res)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
 func (g *Grid) handleSequenceStop() http.HandlerFunc {
+	type stopResponse struct {
+		Response string `json:"response"`
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		g.seqLock.Lock()
-		// json.NewEncoder(w).Encode(g.array)
 		g.seqCancel()
+		g.TurnAllOff()
 		g.seqLock.Unlock()
+		res := stopResponse{
+			Response: "Stopped sequence",
+		}
+		err := json.NewEncoder(w).Encode(res)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
@@ -103,13 +136,24 @@ func (g *Grid) handleArray() http.HandlerFunc {
 	}
 }
 
+func (g *Grid) TurnAllOff() {
+	for _, b := range g.blocks {
+		b.LightOff()
+	}
+}
+
+func (g *Grid) FadeAll() {
+	for _, b := range g.blocks {
+		b.LightFadeOut(g.seqCtx, 1.0, 0)
+	}
+}
 func (g *Grid) RandomSnake(cycleTime float64) {
 	var x, y int
 	x = 0
 	y = 0
 	var step, axis int
 	fmt.Println(g.x, g.y)
-	go func() {
+	go func(ctx context.Context) {
 		for {
 			step = 1 - 2*rand.Intn(2)
 			axis = rand.Intn(2)
@@ -124,46 +168,69 @@ func (g *Grid) RandomSnake(cycleTime float64) {
 					y = g.y
 				}
 			}
-			select {
-			case <-g.seqCtx.Done():
+			g.blockArray[y][x].LightOn()
+			if SleepCanBreak(ctx, cycleTime) {
 				return
-			default:
-				g.blockArray[y][x].LightOn()
-				time.Sleep(time.Duration(cycleTime*1000) * time.Millisecond)
-				g.blockArray[y][x].LightOff()
 			}
+			g.blockArray[y][x].LightOff()
 		}
-	}()
+	}(g.seqCtx)
 }
 
 func (g *Grid) handleSnake() http.HandlerFunc {
 	type snakeCommand struct {
 		Direction string `json:"direction"`
 	}
+	type snakeResponse struct {
+		Response string `json:"response"`
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		var command snakeCommand
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		err := json.NewDecoder(r.Body).Decode(&command)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
-		w.Header().Set("Access-Control-Allow-Origin", "*")
 		switch command.Direction {
-		case "up":
+		case "ArrowDown":
 			g.snakeDirection = 0
-		case "right":
+		case "ArrowRight":
 			g.snakeDirection = 1
-		case "down":
+		case "ArrowUp":
 			g.snakeDirection = 2
-		case "left":
+		case "ArrowLeft":
 			g.snakeDirection = 3
 		}
-		fmt.Println("direction:", g.snakeDirection)
+		resp := snakeResponse{Response: command.Direction}
+		json.NewEncoder(w).Encode(resp)
 	}
 }
 
+func (g *Grid) GetOffBlocks() (emptyBlocks []*Block) {
+	for _, block := range g.blocks {
+		if !block.state.LightOn {
+			emptyBlocks = append(emptyBlocks, block)
+		}
+	}
+	return
+}
+
+func (g *Grid) GetRandomOffBlock() *Block {
+	offBlocks := g.GetOffBlocks()
+	if len(offBlocks) == 0 {
+		fmt.Println("No off blocks")
+		return nil
+	}
+	position := rand.Int() % len(offBlocks)
+	return offBlocks[position]
+}
+
 func (g *Grid) Snake(cycleTime float64) {
-	go func() {
+	go func(ctx context.Context) {
+		score := 1
+		target := g.GetRandomOffBlock()
+		target.LightOn()
 		for {
 			fmt.Println(g.snakeDirection)
 			if g.snakeDirection == 0 {
@@ -181,79 +248,96 @@ func (g *Grid) Snake(cycleTime float64) {
 			if g.snakeCoord.x < 0 {
 				g.snakeCoord.x = g.x
 			}
-			select {
-			case <-g.seqCtx.Done():
+			// check if hit target or crashed
+			if target.X == g.snakeCoord.x && target.Y == g.snakeCoord.y {
+				score++
+				target = g.GetRandomOffBlock()
+				if target != nil {
+					target.LightOn()
+				} else {
+					g.FadeAll()
+					return
+				}
+			} else if g.blockArray[g.snakeCoord.y][g.snakeCoord.x].state.LightOn {
+				g.TurnAllOff()
 				return
-			default:
-				g.blockArray[g.snakeCoord.y][g.snakeCoord.x].LightOn()
-				time.Sleep(time.Duration(cycleTime*1000) * time.Millisecond)
-				g.blockArray[g.snakeCoord.y][g.snakeCoord.x].LightOff()
+			}
+			g.blockArray[g.snakeCoord.y][g.snakeCoord.x].LightOn()
+			// The bit that controls the light staying on
+			go func(co coOrd) {
+				SleepCanBreak(ctx, cycleTime*float64(score))
+				g.blockArray[co.y][co.x].LightOff()
+
+			}(g.snakeCoord)
+			// The bit that waits to move the head forward
+			if SleepCanBreak(ctx, cycleTime) {
+				return
 			}
 		}
-	}()
-
+	}(g.seqCtx)
 }
 
 func (g Grid) MexicanWave(cycleTime float64) {
 	for _, block := range g.blocks {
-		go func(block *Block) {
-			block.LightPulse(g.seqCtx, cycleTime, float64(block.X)/float64(g.x))
+		go func(ctx context.Context, block *Block) {
+			block.LightPulse(ctx, cycleTime, float64(block.X)/float64(g.x))
 			for {
 				select {
-				case <-g.seqCtx.Done():
+				case <-ctx.Done():
+					g.TurnAllOff()
 					return
 				default:
-					block.LightPulse(g.seqCtx, cycleTime, 0.0)
+					block.LightPulse(ctx, cycleTime, 0.0)
 				}
 			}
-		}(block)
+		}(g.seqCtx, block)
 	}
 }
 
 func (g Grid) AlternatingMexicanWave(cycleTime float64) {
 	for _, block := range g.blocks {
-		go func(block *Block) {
+		go func(ctx context.Context, block *Block) {
 			if block.Y%2 == 0 {
-				block.LightPulse(g.seqCtx, cycleTime, float64(block.X)/float64(g.x))
+				block.LightPulse(ctx, cycleTime, float64(block.X)/float64(g.x))
 			} else {
-				block.LightPulse(g.seqCtx, cycleTime, 1.0-float64(block.X)/float64(g.x))
+				block.LightPulse(ctx, cycleTime, 1.0-float64(block.X)/float64(g.x))
 			}
 			for {
 				select {
-				case <-g.seqCtx.Done():
+				case <-ctx.Done():
+					g.TurnAllOff()
 					return
 				default:
-					block.LightPulse(g.seqCtx, cycleTime, 0.0)
+					block.LightPulse(ctx, cycleTime, 0.0)
 				}
 			}
-		}(block)
+		}(g.seqCtx, block)
 	}
 }
 
 func (g Grid) Wave(cycleTime float64) {
 	for _, block := range g.blocks {
-		go func(block *Block) {
+		go func(ctx context.Context, block *Block) {
 			// fmt.Println(float64(block.X) / float64(g.x) * cycleTime)
 			time.Sleep(time.Duration(float64(block.X)/float64(g.x)*cycleTime*1000) * time.Millisecond)
 			fmt.Println("starting", block.Name)
 			for {
-				select {
-				case <-g.seqCtx.Done():
+				block.LightOn()
+				if SleepCanBreak(ctx, cycleTime) {
 					return
-				default:
-					block.LightOn()
-					time.Sleep(time.Duration(cycleTime*1000) * time.Millisecond)
-					block.LightOff()
-					time.Sleep(time.Duration(cycleTime*1000) * time.Millisecond)
+				}
+				block.LightOff()
+				if SleepCanBreak(ctx, cycleTime) {
+					return
 				}
 			}
-		}(block)
+		}(g.seqCtx, block)
 	}
 }
 
 func (g Grid) AlternatingWave(cycleTime float64) {
 	for _, block := range g.blocks {
-		go func(block *Block) {
+		go func(ctx context.Context, block *Block) {
 			// fmt.Println(float64(block.X) / float64(g.x) * cycleTime)
 			if block.Y%2 == 0 {
 				time.Sleep(time.Duration(float64(block.X)/float64(g.x)*cycleTime*1000) * time.Millisecond)
@@ -264,15 +348,20 @@ func (g Grid) AlternatingWave(cycleTime float64) {
 			fmt.Println("starting", block.Name)
 			for {
 				select {
-				case <-g.seqCtx.Done():
+				case <-ctx.Done():
+					g.TurnAllOff()
 					return
 				default:
 					block.LightOn()
-					time.Sleep(time.Duration(cycleTime*1000) * time.Millisecond)
+					if SleepCanBreak(ctx, cycleTime) {
+						return
+					}
 					block.LightOff()
-					time.Sleep(time.Duration(cycleTime*1000) * time.Millisecond)
+					if SleepCanBreak(ctx, cycleTime) {
+						return
+					}
 				}
 			}
-		}(block)
+		}(g.seqCtx, block)
 	}
 }

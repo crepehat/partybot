@@ -35,9 +35,12 @@ class Block extends Component {
   render() {
     return (
       <div>
-        <div style={{backgroundColor: 'rgba(255, 0, 0,'+this.state.data.light_magnitude+')'}}>{this.props.name}</div>
+        <div style={{backgroundColor: 'rgba(255, 0, 0,'+this.state.data.light_magnitude+')'}}>
+        {typeof(this.state.data)!=='undefined'?this.props.name:'yo'}
+        </div>
       </div>
     );
+
   }
 }
 
