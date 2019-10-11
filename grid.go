@@ -152,7 +152,6 @@ func (g *Grid) RandomSnake(cycleTime float64) {
 	x = 0
 	y = 0
 	var step, axis int
-	fmt.Println(g.x, g.y)
 	go func(ctx context.Context) {
 		for {
 			step = 1 - 2*rand.Intn(2)
@@ -232,7 +231,6 @@ func (g *Grid) Snake() {
 		target := g.GetRandomOffBlock()
 		target.LightOn()
 		for {
-			fmt.Println(g.snakeDirection)
 			if g.snakeDirection == 0 {
 				g.snakeCoord.y = (g.snakeCoord.y + 1) % (g.y + 1)
 			} else if g.snakeDirection == 1 {
@@ -318,9 +316,7 @@ func (g Grid) AlternatingMexicanWave(cycleTime float64) {
 func (g Grid) Wave(cycleTime float64) {
 	for _, block := range g.blocks {
 		go func(ctx context.Context, block *Block) {
-			// fmt.Println(float64(block.X) / float64(g.x) * cycleTime)
 			time.Sleep(time.Duration(float64(block.X)/float64(g.x)*cycleTime*1000) * time.Millisecond)
-			fmt.Println("starting", block.Name)
 			for {
 				block.LightOn()
 				if SleepCanBreak(ctx, cycleTime) {
@@ -338,14 +334,12 @@ func (g Grid) Wave(cycleTime float64) {
 func (g Grid) AlternatingWave(cycleTime float64) {
 	for _, block := range g.blocks {
 		go func(ctx context.Context, block *Block) {
-			// fmt.Println(float64(block.X) / float64(g.x) * cycleTime)
 			if block.Y%2 == 0 {
 				time.Sleep(time.Duration(float64(block.X)/float64(g.x)*cycleTime*1000) * time.Millisecond)
 			} else {
 				time.Sleep(time.Duration((1-float64(block.X)/float64(g.x))*cycleTime*1000) * time.Millisecond)
 
 			}
-			fmt.Println("starting", block.Name)
 			for {
 				select {
 				case <-ctx.Done():

@@ -16,7 +16,7 @@ class App extends Component {
   }
 
   getGrid = () => {
-    fetch("http://"+URL+"grid")
+    fetch(URL+"grid")
     .then(resp => resp.json())
     .then(grid => this.setState({grid: grid}))
   }

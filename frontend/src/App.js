@@ -8,7 +8,7 @@ class App extends Component {
 
   keyHandling = (e) => {
     console.log(e.key)
-    fetch("http://"+URL+"snake", {
+    fetch(URL+"snake", {
       body: JSON.stringify({"direction":e.key}),
       method: 'POST',
     })
@@ -28,7 +28,7 @@ class App extends Component {
   }
 
   sendCommand = (command) => {
-    fetch("http://"+URL+"sequence/start", {
+    fetch(URL+"sequence/start", {
       body: JSON.stringify({"name":command, "cycle_seconds":1}),
       method: 'POST',
     })
@@ -38,7 +38,7 @@ class App extends Component {
   }
 
   unsendCommand = () => {
-    fetch("http://"+URL+"sequence/stop", {
+    fetch(URL+"sequence/stop", {
       method: 'GET',
     })
     .then(resp => resp.json()

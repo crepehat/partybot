@@ -11,7 +11,7 @@ class Block extends Component {
     };
   }
 
-  ws = new WebSocket("ws://"+URL+"block/"+this.props.name)
+  ws = new WebSocket("ws://" + window.location.host + "/api/block/"+this.props.name)
 
   handleWs = (ws) => {
     ws.onopen = () => {
