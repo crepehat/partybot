@@ -97,7 +97,7 @@ func (g *Grid) handleSequenceStart() http.HandlerFunc {
 		case "random_snake":
 			g.RandomSnake(command.CycleSeconds)
 		case "snake":
-			g.Snake(command.CycleSeconds)
+			g.Snake()
 		}
 		res := startResponse{
 			Response: fmt.Sprintf("Started %s", command.Name),
@@ -226,7 +226,7 @@ func (g *Grid) GetRandomOffBlock() *Block {
 	return offBlocks[position]
 }
 
-func (g *Grid) Snake(cycleTime float64) {
+func (g *Grid) Snake() {
 	go func(ctx context.Context) {
 		score := 1
 		target := g.GetRandomOffBlock()
@@ -265,12 +265,12 @@ func (g *Grid) Snake(cycleTime float64) {
 			g.blockArray[g.snakeCoord.y][g.snakeCoord.x].LightOn()
 			// The bit that controls the light staying on
 			go func(co coOrd) {
-				SleepCanBreak(ctx, cycleTime*float64(score))
+				SleepCanBreak(ctx, 1.0)
 				g.blockArray[co.y][co.x].LightOff()
 
 			}(g.snakeCoord)
 			// The bit that waits to move the head forward
-			if SleepCanBreak(ctx, cycleTime) {
+			if SleepCanBreak(ctx, 1.0/float64(score)) {
 				return
 			}
 		}

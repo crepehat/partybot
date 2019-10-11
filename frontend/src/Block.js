@@ -5,7 +5,10 @@ import "./Block.css"
 class Block extends Component {
   constructor(props) {
     super(props);
-    this.state = { data:{} };
+    this.state = { 
+      data:{},
+      name:'' 
+    };
   }
 
   ws = new WebSocket("ws://"+URL+"block/"+this.props.name)
@@ -13,7 +16,9 @@ class Block extends Component {
   handleWs = (ws) => {
     ws.onopen = () => {
       // on connecting, do nothing but log it to the console
-      console.log('connected')
+      this.setState({
+        name: this.props.name,
+      })
     }
 
     ws.onmessage = evt => {
@@ -36,7 +41,7 @@ class Block extends Component {
     return (
       <div>
         <div style={{backgroundColor: 'rgba(255, 0, 0,'+this.state.data.light_magnitude+')'}}>
-        {typeof(this.state.data)!=='undefined'?this.props.name:'yo'}
+        {this.state.name}
         </div>
       </div>
     );
