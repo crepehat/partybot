@@ -16,7 +16,7 @@ import (
 // reads from this goroutine.
 func (c *Client) readPump() {
 	defer func() {
-		c.block.unregister <- c
+		c.grid.unregister <- c
 		c.conn.Close()
 		fmt.Println("closed")
 	}()
@@ -32,7 +32,7 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.block.broadcast <- message
+		c.grid.broadcast <- message
 	}
 }
 

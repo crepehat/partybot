@@ -1,13 +1,11 @@
 import React, { Component } from "react";
-import "./App.css"
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 import Block from "./Block"
 
 import { URL } from "./Constants"
 
 
-class App extends Component {
+class Grid extends Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -15,10 +13,33 @@ class App extends Component {
     }
   }
 
+  // ws = new WebSocket("ws://" + window.location.host + "/api/socket")
+  ws = new WebSocket("ws://localhost:8080/api/socket")
+
+  handleWs = (ws) => {
+    ws.onmessage = evt => {
+      // on receiving a message, add it to the list of messages
+      console.log(evt)
+      // var data = JSON.parse(evt.data)
+      // this.setState({data:data})
+    }
+    ws.onopen = () => {
+      // on connecting, do nothing but log it to the console
+      console.log("connected")
+      this.sendMessage()
+    }
+
+  }
+
   getGrid = () => {
-    fetch(URL+"grid")
+    return fetch(URL+"grid")
     .then(resp => resp.json())
-    .then(grid => this.setState({grid: grid}))
+    .then(grid => {
+      console.log(grid)
+      return this.setState({grid: grid})}
+      )
+    .then(console.log(this.state.grid))
+    .catch(err => console.log(err))
   }
 
   constructGrid = (grid) => {
@@ -36,12 +57,19 @@ class App extends Component {
 
   componentDidMount() {
     this.getGrid()
+    this.handleWs(this.ws)
+    // .catch(err => console.log(err))
+  }
+
+  sendMessage = () => {
+    console.log("messaging")
+    this.ws.send("swagger")
   }
 
   render() {
 
     var grid = this.constructGrid(this.state.grid)
-    
+    // this.sendMessage()
     return (
       <table class="table">
         <tbody>
@@ -56,4 +84,4 @@ class App extends Component {
   }
 }
 
-export default App;
+export default Grid;

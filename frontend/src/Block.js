@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { URL } from "./Constants"
 import "./Block.css"
 
 class Block extends Component {
@@ -9,32 +8,6 @@ class Block extends Component {
       data:{},
       name:'' 
     };
-  }
-
-  ws = new WebSocket("ws://" + window.location.host + "/api/block/"+this.props.name)
-
-  handleWs = (ws) => {
-    ws.onopen = () => {
-      // on connecting, do nothing but log it to the console
-      this.setState({
-        name: this.props.name,
-      })
-    }
-
-    ws.onmessage = evt => {
-      // on receiving a message, add it to the list of messages
-      var data = JSON.parse(evt.data)
-      this.setState({data:data})
-    }
-  }
-
-  componentDidMount() {
-    this.handleWs(this.ws)
-
-  }
-
-  sendMessage = () => {
-    this.ws.send("swagger")
   }
 
   render() {
