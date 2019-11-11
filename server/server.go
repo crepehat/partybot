@@ -33,6 +33,15 @@ func main() {
 		fmt.Println(err)
 	}
 
+	grid.Start()
+
+	// go func() {
+	// 	for {
+	// 		time.Sleep(2 * time.Second)
+	// 		grid.Broadcast("yo")
+	// 	}
+	// }()
+
 	// grid.PrintBlock(0, 8)
 
 	mux := http.NewServeMux()

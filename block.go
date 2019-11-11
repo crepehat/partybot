@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func NewBlock(name string, x, y int) *Block {
+func (g *Grid) NewBlock(name string, x, y int) *Block {
 
 	return &Block{
 		Name:           name,
@@ -15,6 +15,7 @@ func NewBlock(name string, x, y int) *Block {
 		LightState:     false,
 		X:              x,
 		Y:              y,
+		grid:           g,
 	}
 }
 

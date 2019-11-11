@@ -1,5 +1,10 @@
 package partybot
 
+import (
+	"context"
+	"math/rand"
+)
+
 // func (g *Grid) Snake() {
 // 	go func(ctx context.Context) {
 // 		score := 1
@@ -50,31 +55,31 @@ package partybot
 // 	}(g.seqCtx)
 // }
 
-// func (g *Grid) RandomSnake(cycleTime float64) {
-// 	var x, y int
-// 	x = 0
-// 	y = 0
-// 	var step, axis int
-// 	go func(ctx context.Context) {
-// 		for {
-// 			step = 1 - 2*rand.Intn(2)
-// 			axis = rand.Intn(2)
-// 			if axis == 0 {
-// 				x = (x + step) % (g.xLength + 1)
-// 				if x < 0 {
-// 					x = g.xLength
-// 				}
-// 			} else {
-// 				y = (y + step) % (g.yLength + 1)
-// 				if y < 0 {
-// 					y = g.yLength
-// 				}
-// 			}
-// 			g.blockArray[y][x].LightOn()
-// 			if SleepCanBreak(ctx, cycleTime) {
-// 				return
-// 			}
-// 			g.blockArray[y][x].LightOff()
-// 		}
-// 	}(g.seqCtx)
-// }
+func (g *Grid) RandomSnake(cycleTime float64) {
+	var x, y int
+	x = 0
+	y = 0
+	var step, axis int
+	go func(ctx context.Context) {
+		for {
+			step = 1 - 2*rand.Intn(2)
+			axis = rand.Intn(2)
+			if axis == 0 {
+				x = (x + step) % g.xLength
+				if x < 0 {
+					x = g.xLength - 1
+				}
+			} else {
+				y = (y + step) % g.yLength
+				if y < 0 {
+					y = g.yLength - 1
+				}
+			}
+			g.blockArray[y][x].LightOn()
+			if SleepCanBreak(ctx, cycleTime) {
+				return
+			}
+			g.blockArray[y][x].LightOff()
+		}
+	}(g.seqCtx)
+}

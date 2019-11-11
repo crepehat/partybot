@@ -26,20 +26,14 @@ func ReadGridFile(gridFile string) (nameGrid [][]string, err error) {
 			return nil, err
 		}
 
-		// transpose
-		for x, column := range row {
-			// prepending so not inverted
-			if len(nameGrid) <= x {
-				nameGrid = append(nameGrid, []string{column})
-			} else {
-				nameGrid[x] = append([]string{column}, nameGrid[x]...)
-			}
-		}
+		// prepend to maintain correct order
+		nameGrid = append([][]string{row}, nameGrid...)
 	}
 	return
 }
 
-// NewGrid accepts a gird of names with coordinates [x][y]
+// NewGrid accepts a gird of names with coordinates [y][x]
+// y,x gels better both with reading csvs and html tables
 func NewGrid(nameGrid [][]string) (g *Grid, err error) {
 	if len(nameGrid) == 0 {
 		return nil, fmt.Errorf("empty namegrid supplied")
@@ -51,22 +45,23 @@ func NewGrid(nameGrid [][]string) (g *Grid, err error) {
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
 		seqLock:    &sync.Mutex{},
-		xLength:    len(nameGrid),
-		yLength:    len(nameGrid[0]),
+		xLength:    len(nameGrid[0]),
+		yLength:    len(nameGrid),
 	}
 	g.seqCtx, g.seqCancel = context.WithCancel(context.Background())
 
 	// Create new block for each value of the supplied grid
-	for x, column := range nameGrid {
-		for y, name := range column {
-			b := NewBlock(name, x, y)
-			if len(g.blockArray) <= x {
+	for y, row := range nameGrid {
+		for x, name := range row {
+			b := g.NewBlock(name, x, y)
+			if len(g.blockArray) <= y {
 				g.blockArray = append(g.blockArray, []*Block{b})
 			} else {
-				g.blockArray[x] = append(g.blockArray[x], b)
+				g.blockArray[y] = append(g.blockArray[y], b)
 			}
 		}
 	}
+	fmt.Printf("Initialised grid with dimensions %dx%d\n", g.xLength, g.yLength)
 	return
 }
 
@@ -83,7 +78,7 @@ func (g *Grid) Start() {
 					close(client.send)
 				}
 			case message := <-g.broadcast:
-				fmt.Println(message)
+				// fmt.Println(string(message))
 				for client := range g.clients {
 					select {
 					case client.send <- message:
@@ -125,4 +120,9 @@ func (g *Grid) GetMux() *http.ServeMux {
 	mux.HandleFunc("/socket", g.ServeWs())
 
 	return mux
+}
+
+func (g *Grid) Broadcast(payload string) {
+	fmt.Println("broadcasting message:", payload)
+	g.broadcast <- []byte(payload)
 }

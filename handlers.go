@@ -35,12 +35,12 @@ func (g *Grid) handleSequenceStart() http.HandlerFunc {
 		// 	g.Wave(command.CycleSeconds)
 		case "mexican_wave":
 			g.MexicanWave(command.CycleSeconds)
-			// case "alt_mexican_wave":
-			// 	g.AlternatingMexicanWave(command.CycleSeconds)
-			// case "alt_wave":
-			// 	g.AlternatingWave(command.CycleSeconds)
-			// case "random_snake":
-			// 	g.RandomSnake(command.CycleSeconds)
+		// case "alt_mexican_wave":
+		// 	g.AlternatingMexicanWave(command.CycleSeconds)
+		// case "alt_wave":
+		// 	g.AlternatingWave(command.CycleSeconds)
+		case "random_snake":
+			g.RandomSnake(command.CycleSeconds)
 			// case "snake":
 			// 	g.Snake()
 		}

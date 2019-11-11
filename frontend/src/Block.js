@@ -1,25 +1,26 @@
 import React, { Component } from "react";
 import "./Block.css"
+import { GridContext } from "./Contexts"
 
 class Block extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { 
-      data:{},
-      name:'' 
-    };
+  static contextType = GridContext
+
+  componentDidMount = () => {
+    const grid = this.context
+    console.log(grid)
+    // console.log(grid[this.props.name])
   }
 
   render() {
+    // console.log("rerendering" + this.props.data.name)
     return (
       <div>
-        <div style={{backgroundColor: 'rgba(255, 0, 0,'+this.state.data.light_magnitude+')'}}>
-        {this.state.name}
-        </div>
+        <div>{this.props.name}</div>
       </div>
     );
-
   }
 }
 
 export default Block;
+// {/* <div style={{backgroundColor: 'rgba(255, 0, 0,'+this.props.data.light_magnitude+')'}}> */}
+// {/* </div> */}
