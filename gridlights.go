@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 func (g *Grid) TurnAllOff() {
@@ -59,6 +60,18 @@ func (g Grid) MexicanWave(cycleTime float64) {
 				}
 			}(g.seqCtx, g.blockArray[x][y])
 		}
+	}
+}
+
+func (g *Grid) Test() {
+	for {
+		for y, _ := range g.blockArray {
+			for x, _ := range g.blockArray[y] {
+				g.blockArray[y][x].SetLight(true, float64(rand.Intn(10)))
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+
 	}
 }
 

@@ -53,6 +53,9 @@ type Grid struct {
 	seqCtx    context.Context
 	seqCancel context.CancelFunc
 
+	// for monitoring changes
+	changeCHAN chan Block
+
 	// Registered clients.
 	clients map[*Client]bool
 

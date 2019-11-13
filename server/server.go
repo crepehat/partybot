@@ -33,12 +33,50 @@ func main() {
 		fmt.Println(err)
 	}
 
-	grid.Start()
+	grid.StartWebsocketServer()
+	grid.StartMonitor()
 
 	// go func() {
+	// 	counter := 0
 	// 	for {
-	// 		time.Sleep(2 * time.Second)
-	// 		grid.Broadcast("yo")
+	// 		time.Sleep(250 * time.Millisecond)
+	// 		grid.Broadcast(fmt.Sprintf("%d", counter))
+	// 		counter++
+	// 		if counter > 100 {
+	// 			counter = 0
+	// 		}
+	// 	}
+	// }()
+
+	go func() {
+		grid.Test()
+	}()
+
+	// go func() {
+	// 	type rng struct {
+	// 		Key   int `json:"key"`
+	// 		Value int `json:"value"`
+	// 	}
+	// 	for i := 0; i < 300; i++ {
+	// 		go func(i int) {
+	// 			counter := 0
+	// 			for {
+	// 				rngSus := rng{
+	// 					Key:   i,
+	// 					Value: rand.Intn(10),
+	// 				}
+	// 				time.Sleep(250 * time.Millisecond)
+	// 				rngSusBytes, err := json.Marshal(rngSus)
+	// 				if err != nil {
+	// 					fmt.Println(err)
+	// 				}
+	// 				grid.Broadcast(string(rngSusBytes))
+	// 				counter++
+	// 				if counter > 100 {
+	// 					counter = 0
+	// 				}
+	// 			}
+	// 		}(i)
 	// 	}
 	// }()
 

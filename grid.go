@@ -3,12 +3,14 @@ package partybot
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 )
 
 func ReadGridFile(gridFile string) (nameGrid [][]string, err error) {
@@ -65,7 +67,7 @@ func NewGrid(nameGrid [][]string) (g *Grid, err error) {
 	return
 }
 
-func (g *Grid) Start() {
+func (g *Grid) StartWebsocketServer() {
 	// Monitor for web clients, add to pool if new, send data to all when received
 	go func() {
 		for {
@@ -88,6 +90,36 @@ func (g *Grid) Start() {
 					}
 				}
 			}
+		}
+	}()
+}
+
+func (g *Grid) StartMonitor() {
+	changeMap := make(map[string]Block)
+	g.changeCHAN = make(chan Block)
+	var sendLock sync.Mutex
+	// get all changes and write them to the map
+	go func() {
+		for change := range g.changeCHAN {
+			sendLock.Lock()
+			changeMap[change.Name] = change
+			sendLock.Unlock()
+		}
+	}()
+
+	go func() {
+		sendTick := time.NewTicker(250 * time.Millisecond)
+		for {
+			sendLock.Lock()
+			changes, err := json.Marshal(changeMap)
+			if err != nil {
+				fmt.Printf("Error marshalling changes:")
+			}
+			g.Broadcast(changes)
+			changeMap = make(map[string]Block)
+
+			sendLock.Unlock()
+			<-sendTick.C
 		}
 	}()
 }
@@ -122,7 +154,7 @@ func (g *Grid) GetMux() *http.ServeMux {
 	return mux
 }
 
-func (g *Grid) Broadcast(payload string) {
-	fmt.Println("broadcasting message:", payload)
-	g.broadcast <- []byte(payload)
+func (g *Grid) Broadcast(payload []byte) {
+	// fmt.Println("broadcasting message:", payload)
+	g.broadcast <- payload
 }

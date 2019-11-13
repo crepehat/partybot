@@ -2,8 +2,6 @@ package partybot
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -19,20 +17,21 @@ func (g *Grid) NewBlock(name string, x, y int) *Block {
 	}
 }
 
-func (b *Block) UpdateClients() (err error) {
-	blockJSON, err := json.Marshal(b)
-	if err != nil {
-		return err
-	}
+// func (b *Block) UpdateClients() (err error) {
+// 	blockJSON, err := json.Marshal(b)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	b.grid.broadcast <- blockJSON
-	return
-}
+// 	b.grid.broadcast <- blockJSON
+// 	return
+// }
 
-func (b *Block) SetLight(on bool, mag float64) (err error) {
+func (b *Block) SetLight(on bool, mag float64) {
 	b.LightMagnitude = mag
 	b.LightState = on
-	return b.UpdateClients()
+	// Send update to change channel for sending
+	b.grid.changeCHAN <- *b
 }
 
 func (b *Block) LightFadeIn(ctx context.Context, duration, start float64) {
@@ -43,11 +42,7 @@ func (b *Block) LightFadeIn(ctx context.Context, duration, start float64) {
 		case <-ctx.Done():
 			return
 		default:
-			err := b.SetLight(true, 1/totalSteps*i)
-			if err != nil {
-				fmt.Println("error setting light: ", err)
-				return
-			}
+			b.SetLight(true, 1/totalSteps*i)
 			time.Sleep(125 * time.Millisecond)
 		}
 	}

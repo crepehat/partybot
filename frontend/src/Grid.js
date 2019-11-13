@@ -16,16 +16,7 @@ class Grid extends Component {
   getGrid = () => {
     return fetch(URL+"grid")
     .then(resp => resp.json())
-    .then(grid => {
-      grid.forEach(row => {
-        row.forEach(block => {
-          var name = this.getBlockName(block.x,block.y)
-          console.log(name)
-          this.setState({[name]:block})
-        })
-      });
-      return this.setState({grid:grid})
-    })
+    .then(grid => this.setState({grid:grid}))
     .catch(err => console.log(err))
   }
 
@@ -36,24 +27,26 @@ class Grid extends Component {
 
   componentDidMount() {
     this.getGrid()
+  }
 
+  constructGrid = () => {
+    return 
   }
 
   render() {
-
     // var grid = this.constructGrid(this.state.grid)
     return (
       <table className="table">
         <tbody>
-         {this.state.grid.reverse().map((line,x) =>            
-           <tr key={x}>
-             {line.map((block,y) => {
+          {this.state.grid.reverse().map((line,x) =>            
+            <tr key={x}>
+              {line.map((block,y) => {
               var name = this.getBlockName(block.x,block.y)
               return <td key={name}><Block key={name} name={name}/></td>
               })
             }
-           </tr>
-         )}
+            </tr>
+          )}
         </tbody>
       </table>
     );

@@ -1,15 +1,24 @@
 import React, { Component } from "react";
-import "./Block.css"
-import { GridContext } from "./Contexts"
+import "./Block.css";
+import { GridContext } from "./Contexts";
+// In component
+import useWebSocket from "react-use-websocket";
+
+// In component function
+const [
+  sendMessage,
+  lastMessage,
+  readyState
+] = useWebSocket("wss://echo.websocket.org", { onOpen: console.log });
 
 class Block extends Component {
-  static contextType = GridContext
+  static contextType = GridContext;
 
   componentDidMount = () => {
-    const grid = this.context
-    console.log(grid)
+    const grid = this.context;
+    // console.log(grid)
     // console.log(grid[this.props.name])
-  }
+  };
 
   render() {
     // console.log("rerendering" + this.props.data.name)
